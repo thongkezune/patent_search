@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patent Search & Download</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #searchInput:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #2196f3;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .patent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .patent-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+            transition: all 0.3s ease;
+        }
+
+        .patent-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .patent-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .patent-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .view-btn {
+            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+            margin-top: 5px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .api-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .api-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .api-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .filters-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .patent-card.animate {
+            animation: slideIn 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Patent Search & Download</h1>
+        
+        <div class="note">
+            <strong>Enhanced Patent Search:</strong> This app demonstrates patent search functionality. When backend APIs are unavailable, it runs in demo mode with sample data. To enable real patent search and downloads, deploy the backend service at the configured URL.
+        </div>
+
+        <div class="api-section">
+            <h3 style="margin-bottom: 10px; color: #333;">🔧 API Configuration</h3>
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <label>Backend Server:</label>
+                <input type="url" id="backendUrl" placeholder="http://localhost:3000" value="http://localhost:3000" style="padding: 8px 15px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 200px;">
+                <button onclick="testBackendConnection()" style="padding: 8px 15px; font-size: 14px; min-width: 100px;">Test Connection</button>
+                <span id="apiStatus" class="api-status disconnected">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="filters-section">
+            <h3 style="margin-bottom: 15px; color: #333;">🔧 Search Settings</h3>
+            <div class="filter-group">
+                <label>Max Results:</label>
+                <input type="number" id="maxResults" value="10" min="5" max="50" style="width: 80px; padding: 5px;" />
+                <label style="margin-left: 20px;">
+                    <input type="checkbox" id="autoDownload" /> Auto-download PDFs
+                </label>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Enter patent keywords (e.g., artificial intelligence, machine learning, blockchain)"
+                    value="machine learning neural network"
+                />
+                <button id="searchBtn">Search Patents</button>
+            </div>
+            
+            <div class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div style="text-align: center; margin-top: 5px;">
+                    <span id="progressText">Searching...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusDiv"></div>
+
+        <div class="results-section">
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        class EnhancedPatentSearchApp {
+            constructor() {
+                this.patents = [];
+                this.isSearching = false;
+                this.backendConnected = false;
+                this.initializeEvents();
+                this.testBackendConnection();
+            }
+
+            initializeEvents() {
+                const searchBtn = document.getElementById('searchBtn');
+                const searchInput = document.getElementById('searchInput');
+
+                searchBtn.addEventListener('click', () => this.searchPatents());
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchPatents();
+                });
+            }
+
+            async testBackendConnection() {
+                const backendUrl = document.getElementById('backendUrl').value;
+                const statusElement = document.getElementById('apiStatus');
+                
+                try {
+                    // Create a promise with timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 50000);
+
+                    const response = await fetch(`${backendUrl}/api/health`, {
+                        method: 'GET',
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        this.backendConnected = true;
+                        statusElement.textContent = 'Connected';
+                        statusElement.className = 'api-status connected';
+                        this.showStatus('Backend server connected successfully!', 'success');
+                    } else {
+                        throw new Error('Server responded with error');
+                    }
+                } catch (error) {
+                    this.backendConnected = false;
+                    statusElement.textContent = 'Disconnected';
+                    statusElement.className = 'api-status disconnected';
+                    this.showStatus('Backend server not available. App will run in demo mode.', 'info');
+                }
+            }
+
+            showStatus(message, type = 'info') {
+                const statusDiv = document.getElementById('statusDiv');
+                statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            }
+
+            updateProgress(percentage, text) {
+                const progressFill = document.querySelector('.progress-fill');
+                const progressText = document.getElementById('progressText');
+                const progressContainer = document.querySelector('.progress-container');
+                
+                progressContainer.style.display = 'block';
+                progressFill.style.width = percentage + '%';
+                progressText.textContent = text;
+            }
+
+            hideProgress() {
+                document.querySelector('.progress-container').style.display = 'none';
+            }
+
+            async searchPatents() {
+                if (this.isSearching) return;
+
+                const searchInput = document.getElementById('searchInput');
+                const keywords = searchInput.value.trim();
+                const maxResults = parseInt(document.getElementById('maxResults').value);
+                
+                if (!keywords) {
+                    this.showStatus('Please enter search keywords', 'error');
+                    return;
+                }
+
+                this.isSearching = true;
+                document.getElementById('searchBtn').disabled = true;
+                
+                try {
+                    this.showStatus('Starting patent search...', 'info');
+                    this.updateProgress(10, 'Initializing search...');
+
+                    if (this.backendConnected) {
+                        await this.performRealPatentSearch(keywords, maxResults);
+                    } else {
+                        throw new Error('Backend server not connected. Please ensure the server is running.');
+                    }
+                    
+                    this.displayResults();
+                    this.updateProgress(100, 'Search complete!');
+                    setTimeout(() => this.hideProgress(), 1000);
+                    
+                    this.showStatus(
+                        `Found ${this.patents.length} patents`, 
+                        'success'
+                    );
+                    
+                } catch (error) {
+                    this.showStatus(`Error: ${error.message}`, 'error');
+                    this.hideProgress();
+                } finally {
+                    this.isSearching = false;
+                    document.getElementById('searchBtn').disabled = false;
+                }
+            }
+            displayResults() {
+                const resultsContainer = document.getElementById('resultsContainer');
+                
+                if (this.patents.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <h3>No patents found</h3>
+                            <p>Try different keywords or check your search criteria.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const demoMode = !this.backendConnected;
+                const demoIndicator = demoMode ? '<span class="demo-badge">DEMO</span>' : '';
+                
+                resultsContainer.innerHTML = `
+                    <h2 style="margin-bottom: 20px; color: #333;">
+                        📄 Search Results (${this.patents.length} patents)${demoIndicator}
+                    </h2>
+                    <div class="patent-grid">
+                        ${this.patents.map(patent => `
+                            <div class="patent-card animate">
+                                <div class="patent-id">${patent.id}</div>
+                                <div class="patent-date">${patent.date || 'Date not available'}</div>
+                                <div class="patent-title">${patent.title}</div>
+                                <button class="download-btn" onclick="patentApp.downloadPatent('${patent.id}', '${patent.pdfUrl || ''}')">
+                                    📥 Download PDF
+                                </button>
+                                ${patent.pdfUrl ? `
+                                    <button class="view-btn" onclick="window.open('${patent.pdfUrl}', '_blank')">
+                                        👁️ View Online
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                // Auto-download if enabled
+                if (document.getElementById('autoDownload').checked) {
+                    this.autoDownloadPatents();
+                }
+            }
+            async performRealPatentSearch(keywords, maxResults) {
+                const backendUrl = document.getElementById('backendUrl').value;
+                
+                this.updateProgress(30, 'Searching patent databases...');
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 100000);
+
+                const response = await fetch(`${backendUrl}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keywords: keywords,
+                        maxResults: maxResults
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error('Patent search failed. Please try again later.');
+                }
+
+                const data = await response.json();
+                this.patents = data.patents || [];
+                
+                this.updateProgress(80, 'Processing results...');
+            }
+
+            async downloadPatent(patentId, pdfUrl) {
+                const button = event.target;
+                const originalText = button.textContent;
+                const originalBackground = button.style.background || '';
+                
+                try {
+                    button.disabled = true;
+                    button.textContent = '⏳ Downloading...';
+                    
+                    this.showStatus(`Downloading patent ${patentId}...`, 'info');
+
+                    if (!this.backendConnected) {
+                        throw new Error('Backend server not connected');
+                    }
+
+                    await this.downloadRealPDF(patentId, pdfUrl);
+                    
+                    button.textContent = '✅ Downloaded';
+                    button.style.background = 'linear-gradient(45deg, #4caf50, #45a049)';
+                    this.showStatus(`Patent ${patentId} downloaded successfully!`, 'success');
+                    
+                } catch (error) {
+                    button.textContent = '❌ Failed';
+                    button.style.background = 'linear-gradient(45deg, #f44336, #d32f2f)';
+                    this.showStatus(`Failed to download patent ${patentId}: ${error.message}`, 'error');
+                } finally {
+                    setTimeout(() => {
+                        button.disabled = false;
+                        if (button.textContent !== '✅ Downloaded') {
+                            button.textContent = originalText;
+                            button.style.background = originalBackground;
+                        }
+                    }, 3000);
+                }
+            }
+            async downloadRealPDF(patentId, pdfUrl) {
+                const backendUrl = document.getElementById('backendUrl').value;
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 20000); // 15 second timeout
+
+                    const response = await fetch(`${backendUrl}/api/download`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            patentId: patentId,
+                            pdfUrl: pdfUrl
+                        }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        // If download API fails, fall back to demo download
+                        this.showStatus('PDF download API unavailable, creating demo file...', 'info');
+                        await this.downloadDemoPDF(patentId);
+                        return;
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `patent_${patentId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                } catch (error) {
+                    // Network error - fall back to demo download
+                    this.showStatus('Network error, creating demo file...', 'info');
+                    await this.downloadDemoPDF(patentId);
+                }
+            }
+
+            async downloadDemoPDF(patentId) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const content = `PATENT DOCUMENT - ${patentId}
+                
+This is a demonstration file. In the full version, this would be the actual PDF patent document.
+
+Patent ID: ${patentId}
+Download Date: ${new Date().toISOString()}
+Source: Demo Mode
+
+For actual PDF downloads, please deploy the backend server.`;
+                
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `patent_${patentId}_demo.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }
+        }
+
+        // Global functions
+        async function testBackendConnection() {
+            await patentApp.testBackendConnection();
+        }
+
+        // Initialize the app
+        let patentApp;
+        
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                patentApp = new EnhancedPatentSearchApp();
+            });
+        } else {
+            patentApp = new EnhancedPatentSearchApp();
+        }
+    </script>
+</body>
+</html>
